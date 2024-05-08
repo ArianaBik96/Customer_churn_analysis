@@ -7,4 +7,38 @@ This project aims to predict customer churn for a financial institution using ma
 ![Alt text](images/tree1.png)
 
 ## 📦 Repo structure
-
+    main_folder/
+    ├── .gitignore
+    ├── Readme.md
+    ├── classification_models/
+    │   ├── decision_tree_classifier.pkl.gz
+    │   ├── knn_classifier.pkl.gz
+    │   ├── naive_bayes_classifier.pkl.gz
+    │   ├── random_forest_classifier.pkl.gz
+    │   └── xgboost_classifier.pkl.gz
+    ├── data/
+    │   ├── BankChurners.csv
+    │   └── NewClients.csv
+    ├── Feature_names/
+    │   ├── encoded_feature_names.csv
+    │   └── original_feature_names.csv
+    ├── images/
+    │   └── tree1.png
+    ├── output/
+    │   └── feature_importance_plot.png
+    ├── Preprocess_models/
+    │   ├── encoder.pkl.gz
+    │   ├── imputer_cat.pkl.gz
+    │   ├── imputer_num.pkl.gz
+    │   ├── scaler.pkl.gz
+    │   └── standardizer.pkl.gz
+    └── src/
+        ├── __init__.py
+        ├── churn_prediction.py
+        ├── classifiers.py
+        ├── preprocessing.py
+        └── notebook/
+            ├── __init__.py
+            ├── 01-EDA.ipynb
+            ├── 02-exploring_clustering.ipynb
+            └── notebook.py
