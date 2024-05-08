@@ -80,7 +80,7 @@ The dataset used for this project can be found on [Kaggle](https://www.kaggle.co
 
 #### 🎯 Important features 
 
-![Alt text](output/.png)
+![Alt text](output/feature_importance_plot.png)
 
 - **Total_Trans_Ct**: The total number of transactions made by the customer.
 - **Total_Relationship_Count**: The total number of products held by the customer.
