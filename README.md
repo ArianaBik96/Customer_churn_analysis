@@ -71,7 +71,7 @@ To get started with Churn Prediction, follow these simple steps:
     pip install -r requirements.txt
     ```
 
-You're all set! You can now preprocess the data using preprocessing_data.py, train your classification model using train_classification_model.py, train your clustering model using train_clustering_model.py, and explore the data in the data directory. Enjoy!
+You're all set! Enjoy!
 
 ## 📂 Data Source
 The dataset used for this project can be found on [Kaggle](https://www.kaggle.com/datasets/sakshigoyal7/credit-card-customers).
