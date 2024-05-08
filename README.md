@@ -109,6 +109,3 @@ This project took 5 days for completion.
 
 ## 📌 Personal Situation
 This project was done as part of the AI Bootcamp at BeCode.org.
-
-
-https://www.kaggle.com/datasets/sakshigoyal7/credit-card-customers
