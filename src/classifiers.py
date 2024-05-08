@@ -107,54 +107,54 @@ def export_model(model, model_name, export_folder):
         pickle.dump(model, f)
     print(f"Model {model_name} exported to {filename}")
 
-if __name__ == "__main__":
-    current_directory = os.path.dirname(__file__)
-    csv_file_path = os.path.join(current_directory, "..", "data", "BankChurners.csv")
-    churners_df = pd.read_csv(csv_file_path, sep=',')
+current_directory = os.path.dirname(__file__)
+csv_file_path = os.path.join(current_directory, "..", "data", "BankChurners.csv")
+churners_df = pd.read_csv(csv_file_path, sep=',')
 
-    # Instantiate the class with the dataframe name
-    preprocessor = DataPreprocessor(df_name=churners_df)
+# Instantiate the class with the dataframe name
+preprocessor = DataPreprocessor(df_name=churners_df)
 
-    # Use the preprocess method to get preprocessed data
-    X_train, X_test, y_train, y_test = preprocessor.preprocess()
+# Use the preprocess method to get preprocessed data
+X_train, X_test, y_train, y_test = preprocessor.preprocess()
 
-    # Train and evaluate each classifier
-    rfc = random_forest_classifier(X_train, X_test, y_train, y_test)
-    dt = decision_tree_classifier(X_train, X_test, y_train, y_test)
-    xgb_classifier, xgb_feature_importance = xgboost_classifier(X_train, X_test, y_train, y_test, preprocessor.get_original_feature_names())  # Fixed
-    nb = naive_bayes_classifier(X_train, X_test, y_train, y_test)
-    knn = knn_classifier(X_train, X_test, y_train, y_test)
 
-    # Compare ROC curves
-    roc_c(X_test, y_test, rfc, "Random Forest Classifier")
-    roc_c(X_test, y_test, dt, "Decision Tree Classifier")
-    roc_c(X_test, y_test, xgb_classifier, "XGBoost Classifier")  # Use xgb_classifier here
-    roc_c(X_test, y_test, nb, "Naive Bayes Classifier")
-    roc_c(X_test, y_test, knn, "K-Nearest Neighbors Classifier")
+# Train and evaluate each classifier
+rfc = random_forest_classifier(X_train, X_test, y_train, y_test)
+dt = decision_tree_classifier(X_train, X_test, y_train, y_test)
+xgb_classifier, xgb_feature_importance = xgboost_classifier(X_train, X_test, y_train, y_test, preprocessor.get_original_feature_names())  # Fixed
+nb = naive_bayes_classifier(X_train, X_test, y_train, y_test)
+knn = knn_classifier(X_train, X_test, y_train, y_test)
 
-    # Compare confusion matrices
-    confusion_m(X_test, y_test, rfc, "Random Forest Classifier")
-    confusion_m(X_test, y_test, dt, "Decision Tree Classifier")
-    confusion_m(X_test, y_test, xgb_classifier, "XGBoost Classifier")  # Use xgb_classifier here
-    confusion_m(X_test, y_test, nb, "Naive Bayes Classifier")
-    confusion_m(X_test, y_test, knn, "K-Nearest Neighbors Classifier")
+# Compare ROC curves
+roc_c(X_test, y_test, rfc, "Random Forest Classifier")
+roc_c(X_test, y_test, dt, "Decision Tree Classifier")
+roc_c(X_test, y_test, xgb_classifier, "XGBoost Classifier")  # Use xgb_classifier here
+roc_c(X_test, y_test, nb, "Naive Bayes Classifier")
+roc_c(X_test, y_test, knn, "K-Nearest Neighbors Classifier")
 
-    # Compare cross-validation scores
-    cross_val(X_train, y_train, rfc, "Random Forest Classifier")
-    cross_val(X_train, y_train, dt, "Decision Tree Classifier")
-    cross_val(X_train, y_train, xgb_classifier, "XGBoost Classifier")  # Use xgb_classifier here
-    cross_val(X_train, y_train, nb, "Naive Bayes Classifier")
-    cross_val(X_train, y_train, knn, "K-Nearest Neighbors Classifier")
+# Compare confusion matrices
+confusion_m(X_test, y_test, rfc, "Random Forest Classifier")
+confusion_m(X_test, y_test, dt, "Decision Tree Classifier")
+confusion_m(X_test, y_test, xgb_classifier, "XGBoost Classifier")  # Use xgb_classifier here
+confusion_m(X_test, y_test, nb, "Naive Bayes Classifier")
+confusion_m(X_test, y_test, knn, "K-Nearest Neighbors Classifier")
 
-    # Plot feature importance
-    print("XGBoost Feature Importance:")
-    plot_feature_importance(xgb_feature_importance)
+# Compare cross-validation scores
+cross_val(X_train, y_train, rfc, "Random Forest Classifier")
+cross_val(X_train, y_train, dt, "Decision Tree Classifier")
+cross_val(X_train, y_train, xgb_classifier, "XGBoost Classifier")  # Use xgb_classifier here
+cross_val(X_train, y_train, nb, "Naive Bayes Classifier")
+cross_val(X_train, y_train, knn, "K-Nearest Neighbors Classifier")
 
-    # Export each model to a separate file
-    export_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'classification_models'))
+# Plot feature importance
+print("XGBoost Feature Importance:")
+plot_feature_importance(xgb_feature_importance)
 
-    export_model(rfc, "random_forest_classifier", export_folder)
-    export_model(dt, "decision_tree_classifier", export_folder)
-    export_model(xgb_classifier, "xgboost_classifier", export_folder)
-    export_model(nb, "naive_bayes_classifier", export_folder)
-    export_model(knn, "knn_classifier", export_folder)
+# Export each model to a separate file
+export_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'classification_models'))
+
+export_model(rfc, "random_forest_classifier", export_folder)
+export_model(dt, "decision_tree_classifier", export_folder)
+export_model(xgb_classifier, "xgboost_classifier", export_folder)
+export_model(nb, "naive_bayes_classifier", export_folder)
+export_model(knn, "knn_classifier", export_folder)

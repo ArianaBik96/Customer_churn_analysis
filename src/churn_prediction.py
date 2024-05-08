@@ -19,12 +19,11 @@ def load_model(file):
 
     return loaded_model
 
-def load_preprocessing(imputer_cat_file, imputer_num_file, encoder_files, scaler_file, standardizer_file):
+def load_preprocessing(imputer_cat_file, imputer_num_file, encoder_files,standardizer_file):
     # Define the file paths for preprocessing models
     imputer_cat_file_path = os.path.join(os.path.dirname(__file__), '..', 'preprocess_models', imputer_cat_file)
     imputer_num_file_path = os.path.join(os.path.dirname(__file__), '..', 'preprocess_models', imputer_num_file)
     encoder_file_path = os.path.join(os.path.dirname(__file__), '..', 'preprocess_models', encoder_files)
-    scaler_file_path = os.path.join(os.path.dirname(__file__), '..', 'preprocess_models', scaler_file)
     standardizer_file_path = os.path.join(os.path.dirname(__file__), '..', 'preprocess_models', standardizer_file)
 
     # Load categorical imputer
@@ -39,19 +38,15 @@ def load_preprocessing(imputer_cat_file, imputer_num_file, encoder_files, scaler
     with gzip.open(encoder_file_path, 'rb') as f:
         loaded_encoder = pickle.load(f)
 
-    # Load scaler
-    with gzip.open(scaler_file_path, 'rb') as f:
-        loaded_scaler = pickle.load(f)
-
     # Load standardizer
     with gzip.open(standardizer_file_path, 'rb') as f:
         loaded_standardizer = pickle.load(f)
 
-    return loaded_cat_imp, loaded_num_imp, loaded_encoder, loaded_scaler, loaded_standardizer
+    return loaded_cat_imp, loaded_num_imp, loaded_encoder, loaded_standardizer
 
 def preprocess_data(df, column_names):
     # Load preprocessing objects
-    trained_cat_imputer, trained_num_imputer, trained_onehot_encoder, trained_scaler, trained_standardizer = load_preprocessing('imputer_cat.pkl.gz', 'imputer_num.pkl.gz', 'encoder.pkl.gz', 'scaler.pkl.gz', 'standardizer.pkl.gz')
+    trained_cat_imputer, trained_num_imputer, trained_onehot_encoder, trained_standardizer = load_preprocessing('imputer_cat.pkl.gz', 'imputer_num.pkl.gz', 'encoder.pkl.gz', 'standardizer.pkl.gz')
 
     existing_columns = list(df.keys())
     # Find the missing columns
@@ -77,14 +72,13 @@ def preprocess_data(df, column_names):
     # Apply imputation for categorical features
     df[categorical_cols] = trained_cat_imputer.transform(df[categorical_cols])
 
+    print(f"df: {df.head(20)}")
     # Apply one-hot encoding
     df_encoded = trained_onehot_encoder.transform(df[categorical_cols])
     df_encoded_df = pd.DataFrame(df_encoded, columns=trained_onehot_encoder.get_feature_names_out(categorical_cols))
     df.drop(columns=categorical_cols, inplace=True)
     df = pd.concat([df, df_encoded_df], axis=1)
 
-    # Apply standardization
-    df = trained_scaler.transform(df)
     df = trained_standardizer.transform(df)
 
     return df

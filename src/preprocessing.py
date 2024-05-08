@@ -3,7 +3,6 @@ import pandas as pd
 import pickle
 import gzip
 from imblearn.over_sampling import SMOTE
-from sklearn.preprocessing import OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
 from sklearn.model_selection import train_test_split
@@ -45,22 +44,11 @@ class DataPreprocessor:
         return X_train, X_test, imputer_cat, imputer_num
 
     def encoder(self, X_train, X_test):
-        encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
-
+        encoder = LabelEncoder()
         categorical_cols = X_train.select_dtypes('object').columns
-        X_train_encoded = pd.DataFrame(encoder.fit_transform(X_train[categorical_cols]))
-        X_test_encoded = pd.DataFrame(encoder.transform(X_test[categorical_cols]))
-
-        # Replacing original categorical columns with encoded ones
-        X_train.drop(columns=categorical_cols, inplace=True)
-        X_test.drop(columns=categorical_cols, inplace=True)
-
-        X_train.reset_index(drop=True, inplace=True)
-        X_test.reset_index(drop=True, inplace=True)
-
-        X_train = pd.concat([X_train, X_train_encoded], axis=1)
-        X_test = pd.concat([X_test, X_test_encoded], axis=1)
-
+        for col in categorical_cols:
+            X_train[col] = encoder.fit_transform(X_train[col])
+            X_test[col] = X_test[col].map(lambda s: encoder.transform([s])[0] if s in encoder.classes_ else -1)
         return X_train, X_test, encoder
 
     def normalize(self, X_train, X_test):
@@ -95,24 +83,16 @@ class DataPreprocessor:
         self.df_name = self.cleaning_data(self.df_name)
         X = self.df_name.drop('Attrition_Flag', axis=1)
         y = self.df_name['Attrition_Flag']
-
-        # Convert feature names to strings
-        X.columns = X.columns.astype(str)
-
+        
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
         X_train, X_test, imputer_cat, imputer_num = self.imputer(X_train, X_test)
         X_train, X_test, encoder = self.encoder(X_train, X_test)
-
-        # Convert feature names to strings after encoding
-        X_train.columns = X_train.columns.astype(str)
-        X_test.columns = X_test.columns.astype(str)
-
         X_train, X_test, norm_scaler = self.normalize(X_train, X_test)
         X_train, X_test, stand_scaler = self.standardize(X_train, X_test)
         smote = SMOTE(random_state=42)
         X_train, y_train = smote.fit_resample(X_train, y_train)
-
+        
         label_encoder = LabelEncoder()
         y_train = label_encoder.fit_transform(y_train)
         y_test = label_encoder.transform(y_test)
@@ -126,6 +106,7 @@ class DataPreprocessor:
         self.export_preprocessing_models(imputer_cat, imputer_num, encoder, norm_scaler, stand_scaler, preprocess_models_path)
 
         return X_train, X_test, y_train, y_test
+
     def get_original_feature_names(self):
         if self.original_feature_names is None:
             raise ValueError("Original feature names have not been stored. Please preprocess the data first.")
