@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from preprocessing import DataPreprocessor
 from sklearn.metrics import classification_report, roc_auc_score, confusion_matrix, roc_curve
 from sklearn.model_selection import cross_val_score
 from sklearn.tree import DecisionTreeClassifier
@@ -7,9 +8,9 @@ from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
-from preprocessing import DataPreprocessor
-from sklearn.preprocessing import LabelEncoder
 import matplotlib.pyplot as plt
+import pickle
+import gzip
 
 # Define functions for each classifier
 def random_forest_classifier(X_train, X_test, y_train, y_test):
@@ -26,12 +27,11 @@ def decision_tree_classifier(X_train, X_test, y_train, y_test):
     print(classification_report(y_test, dt.predict(X_test)))
     return dt
 
-def xgboost_classifier(X_train, X_test, y_train, y_test):
+def xgboost_classifier(X_train, X_test, y_train, y_test, feature_names_original):
     xgb = XGBClassifier()
     xgb.fit(X_train, y_train)  # Train XGBoost on preprocessed data
     print("XGBoost Classifier:")
     print(classification_report(y_test, xgb.predict(X_test)))
-    feature_names_original = preprocessor.get_original_feature_names()  # Get original feature names
     feature_importance_dict = dict(zip(feature_names_original, xgb.feature_importances_))
     return xgb, feature_importance_dict
 
@@ -71,59 +71,90 @@ def cross_val(X_train, y_train, clf, clf_name):
 def plot_feature_importance(feature_importance):
     sorted_importance = sorted(feature_importance.items(), key=lambda x: x[1], reverse=True)
     features, importance = zip(*sorted_importance)
-    plt.figure(figsize=(10,6))
-    plt.barh(range(len(features)), importance, align='center')
-    plt.yticks(range(len(features)), features)
+    num_features = len(features)
+    
+    # Calculate the appropriate figure size based on the number of features
+    figsize_height = min(0.5 * num_features, 10)  # Maximum height of 10 inches
+    plt.figure(figsize=(10, figsize_height))
+    
+    plt.barh(range(num_features), importance, align='center')
+    plt.yticks(range(num_features), features)  # Set the feature names as y-axis ticks
     plt.xlabel('Feature Importance')
     plt.ylabel('Feature')
     plt.title('XGBoost Feature Importance')
     
-    # Print feature names and importance values
-    print("Feature Importance:")
-    for feature, imp in zip(features, importance):
-        print(f"{feature}: {imp}")
-
-    plt.show()
-
+    # Adjust the layout to avoid clipping feature names
+    plt.tight_layout()
     
-current_directory = os.path.dirname(__file__)
-csv_file_path = os.path.join(current_directory, "..", "data", "BankChurners.csv")
-churners_df = pd.read_csv(csv_file_path, sep=',')
+    # Save the plot as an image file
+    output_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'output'))
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    
+    plot_file_path = os.path.join(output_folder, 'feature_importance_plot.png')
+    plt.savefig(plot_file_path)
+    plt.close()
+    
+    print(f"Feature importance plot saved to {plot_file_path}")
 
-# Instantiate the class with the dataframe name
-preprocessor = DataPreprocessor(df_name=churners_df)
+# Function to export each model to a separate file
+def export_model(model, model_name, export_folder):
+    if not os.path.exists(export_folder):
+        os.makedirs(export_folder)
+    
+    filename = os.path.join(export_folder, f"{model_name}.pkl.gz")
+    with gzip.open(filename, 'wb') as f:
+        pickle.dump(model, f)
+    print(f"Model {model_name} exported to {filename}")
 
-# Use the preprocess method to get preprocessed data
-X_train, X_test, y_train, y_test = preprocessor.preprocess()
+if __name__ == "__main__":
+    current_directory = os.path.dirname(__file__)
+    csv_file_path = os.path.join(current_directory, "..", "data", "BankChurners.csv")
+    churners_df = pd.read_csv(csv_file_path, sep=',')
 
-# Train and evaluate each classifier
-rfc = random_forest_classifier(X_train, X_test, y_train, y_test)
-dt = decision_tree_classifier(X_train, X_test, y_train, y_test)
-xgb_classifier, xgb_feature_importance = xgboost_classifier(X_train, X_test, y_train, y_test)  # Fix here
-nb = naive_bayes_classifier(X_train, X_test, y_train, y_test)
-knn = knn_classifier(X_train, X_test, y_train, y_test)
+    # Instantiate the class with the dataframe name
+    preprocessor = DataPreprocessor(df_name=churners_df)
 
-# Compare ROC curves
-roc_c(X_test, y_test, rfc, "Random Forest Classifier")
-roc_c(X_test, y_test, dt, "Decision Tree Classifier")
-roc_c(X_test, y_test, xgb_classifier, "XGBoost Classifier")  # Use xgb_classifier here
-roc_c(X_test, y_test, nb, "Naive Bayes Classifier")
-roc_c(X_test, y_test, knn, "K-Nearest Neighbors Classifier")
+    # Use the preprocess method to get preprocessed data
+    X_train, X_test, y_train, y_test = preprocessor.preprocess()
 
-# Compare confusion matrices
-confusion_m(X_test, y_test, rfc, "Random Forest Classifier")
-confusion_m(X_test, y_test, dt, "Decision Tree Classifier")
-confusion_m(X_test, y_test, xgb_classifier, "XGBoost Classifier")  # Use xgb_classifier here
-confusion_m(X_test, y_test, nb, "Naive Bayes Classifier")
-confusion_m(X_test, y_test, knn, "K-Nearest Neighbors Classifier")
+    # Train and evaluate each classifier
+    rfc = random_forest_classifier(X_train, X_test, y_train, y_test)
+    dt = decision_tree_classifier(X_train, X_test, y_train, y_test)
+    xgb_classifier, xgb_feature_importance = xgboost_classifier(X_train, X_test, y_train, y_test, preprocessor.get_original_feature_names())  # Fixed
+    nb = naive_bayes_classifier(X_train, X_test, y_train, y_test)
+    knn = knn_classifier(X_train, X_test, y_train, y_test)
 
-# Compare cross-validation scores
-cross_val(X_train, y_train, rfc, "Random Forest Classifier")
-cross_val(X_train, y_train, dt, "Decision Tree Classifier")
-cross_val(X_train, y_train, xgb_classifier, "XGBoost Classifier")  # Use xgb_classifier here
-cross_val(X_train, y_train, nb, "Naive Bayes Classifier")
-cross_val(X_train, y_train, knn, "K-Nearest Neighbors Classifier")
+    # Compare ROC curves
+    roc_c(X_test, y_test, rfc, "Random Forest Classifier")
+    roc_c(X_test, y_test, dt, "Decision Tree Classifier")
+    roc_c(X_test, y_test, xgb_classifier, "XGBoost Classifier")  # Use xgb_classifier here
+    roc_c(X_test, y_test, nb, "Naive Bayes Classifier")
+    roc_c(X_test, y_test, knn, "K-Nearest Neighbors Classifier")
 
-# Plot feature importance
-print("XGBoost Feature Importance:")
-plot_feature_importance(xgb_feature_importance)
+    # Compare confusion matrices
+    confusion_m(X_test, y_test, rfc, "Random Forest Classifier")
+    confusion_m(X_test, y_test, dt, "Decision Tree Classifier")
+    confusion_m(X_test, y_test, xgb_classifier, "XGBoost Classifier")  # Use xgb_classifier here
+    confusion_m(X_test, y_test, nb, "Naive Bayes Classifier")
+    confusion_m(X_test, y_test, knn, "K-Nearest Neighbors Classifier")
+
+    # Compare cross-validation scores
+    cross_val(X_train, y_train, rfc, "Random Forest Classifier")
+    cross_val(X_train, y_train, dt, "Decision Tree Classifier")
+    cross_val(X_train, y_train, xgb_classifier, "XGBoost Classifier")  # Use xgb_classifier here
+    cross_val(X_train, y_train, nb, "Naive Bayes Classifier")
+    cross_val(X_train, y_train, knn, "K-Nearest Neighbors Classifier")
+
+    # Plot feature importance
+    print("XGBoost Feature Importance:")
+    plot_feature_importance(xgb_feature_importance)
+
+    # Export each model to a separate file
+    export_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'classification_models'))
+
+    export_model(rfc, "random_forest_classifier", export_folder)
+    export_model(dt, "decision_tree_classifier", export_folder)
+    export_model(xgb_classifier, "xgboost_classifier", export_folder)
+    export_model(nb, "naive_bayes_classifier", export_folder)
+    export_model(knn, "knn_classifier", export_folder)
